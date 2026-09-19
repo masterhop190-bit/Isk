@@ -443,6 +443,7 @@ private fun EmptyChatGreeting(onPromptClick: (String) -> Unit) {
         )
 
         val samplePrompts = listOf(
+            "Call +998901234567",
             "Telegram’da Onamga 'Bordim' deb xabar yubor",
             "Ekranda nima bor? (Screen vision)",
             "Make me a .docx file containing 1 car image",

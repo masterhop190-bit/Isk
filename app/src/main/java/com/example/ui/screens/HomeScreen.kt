@@ -25,19 +25,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -46,6 +50,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,6 +64,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,6 +102,8 @@ fun HomeScreen(
     val isAccessibilityActive by viewModel.isAccessibilityActive.collectAsState()
 
     var manualInputText by remember { mutableStateOf("") }
+    var showCallDialog by remember { mutableStateOf(false) }
+    var callNumberInput by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -104,11 +112,11 @@ fun HomeScreen(
             .padding(horizontal = 16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Top Header Bar
+        // JARVIS Top HUD Status Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -121,26 +129,28 @@ fun HomeScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (isAccessibilityActive) NeonEmerald else WarningAmber)
+                            .background(if (isListening) CyberCyan else if (isAccessibilityActive) NeonEmerald else WarningAmber)
                     )
                     Text(
-                        text = "NOVA CORE v2.5",
+                        text = "JARVIS // NOVA PROTOCOL",
                         color = CyberCyan,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
+                        letterSpacing = 1.5.sp,
+                        fontFamily = FontFamily.Monospace
                     )
                 }
                 Text(
-                    text = "Autonomous Jarvis Companion",
+                    text = "STATUS: ${if (isListening) "LISTENING..." else if (isSpeaking) "VOCALIZING..." else "SYS_ONLINE (Say 'Hi Nova')"} ",
                     color = TextMuted,
-                    fontSize = 11.sp
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace
                 )
             }
 
-            // Live Mode Toggle Pill
+            // Live Autonomous Mode Toggle
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -166,7 +176,7 @@ fun HomeScreen(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = if (liveMode) "LIVE ACTIVE" else "LIVE MODE",
+                        text = if (liveMode) "LIVE DUPLEX" else "HANDS-FREE",
                         color = if (liveMode) NeonPurple else TextSecondary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -175,69 +185,67 @@ fun HomeScreen(
             }
         }
 
-        // Central Jarvis Arc Visualizer
+        // Central Holographic Blue Cube & Reactor Core
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp),
+                .height(280.dp),
             contentAlignment = Alignment.Center
         ) {
             GlowingArcVisualizer(
-                modifier = Modifier.size(240.dp),
+                modifier = Modifier.size(260.dp),
                 amplitude = amplitude,
                 isListening = isListening,
                 isSpeaking = isSpeaking,
                 isProcessing = isProcessing
             )
 
-            // Center Interactive Mic Button
+            // Voice Action Pill Over the Core
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
+                    .align(Alignment.BottomCenter)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                SpaceSurfaceVariant,
-                                SpaceDarkBg
+                        Brush.horizontalGradient(
+                            listOf(
+                                if (isListening) CyberCyan else ElectricBlue,
+                                if (isListening) ElectricBlue else NeonPurple
                             )
                         )
                     )
-                    .border(
-                        2.dp,
-                        if (isListening) CyberCyan else if (isSpeaking) NeonPurple else ElectricBlue,
-                        CircleShape
-                    )
                     .clickable { viewModel.toggleVoiceListening() }
-                    .testTag("main_mic_button"),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                    .testTag("main_mic_button")
             ) {
-                Icon(
-                    imageVector = when {
-                        isSpeaking -> Icons.Filled.VolumeUp
-                        isListening -> Icons.Filled.Mic
-                        isProcessing -> Icons.Filled.Bolt
-                        else -> Icons.Filled.MicOff
-                    },
-                    contentDescription = "Voice Control",
-                    tint = when {
-                        isSpeaking -> NeonPurple
-                        isListening -> CyberCyan
-                        isProcessing -> NeonEmerald
-                        else -> TextPrimary
-                    },
-                    modifier = Modifier.size(36.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isListening) Icons.Filled.Stop else Icons.Filled.Mic,
+                        contentDescription = "Mic Trigger",
+                        tint = SpaceDarkBg,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = if (isListening) "STOP LISTENING" else "START (SAY 'HI NOVA')",
+                        color = SpaceDarkBg,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                }
             }
         }
 
-        // Status & Transcription Bar
+        // Real-time Status / Subtitle Display
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = 12.dp,
-            borderColor = if (isListening) CyberCyan.copy(alpha = 0.5f) else SpaceCardBorder
+            borderColor = if (isListening) CyberCyan else SpaceCardBorder
         ) {
             Column(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -249,14 +257,14 @@ fun HomeScreen(
                         isProcessing -> NeonEmerald
                         else -> TextSecondary
                     },
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
                 if (recognizedSpeech.isNotBlank()) {
                     Text(
-                        text = "\"$recognizedSpeech\"",
+                        text = "“$recognizedSpeech”",
                         color = TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -266,58 +274,72 @@ fun HomeScreen(
             }
         }
 
-        // Quick Command Shortcuts Header
+        // Quick Tactical Grid: Call, Telegram, Screen Vision, Docx
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "AVTOMATLASHTIRILGAN BUYRUQLAR (QUICK ACTIONS)",
-                color = TextMuted,
+                text = "JARVIS PROTOCOL ACTIONS",
+                color = CyberCyan,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+                letterSpacing = 1.sp,
+                fontFamily = FontFamily.Monospace
             )
         }
 
-        // Quick Action Grid / Cards
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // 1. Direct Phone Call Action
             QuickActionCard(
-                icon = Icons.Filled.Send,
+                icon = Icons.Filled.PhoneInTalk,
+                accentColor = NeonEmerald,
+                title = "Telefon Qilish (Phone Call)",
+                subtitle = "Istalgan raqamga yoki kontaktga to'g'ridan-to'g'ri qo'ng'iroq qilish",
+                tag = "DIRECT CALL",
+                testTag = "action_phone_call",
+                onClick = { showCallDialog = true }
+            )
+
+            // 2. Telegram Send Action
+            QuickActionCard(
+                icon = Icons.AutoMirrored.Filled.Send,
                 accentColor = CyberCyan,
                 title = "Telegram: Onamga 'Bordim'",
-                subtitle = "Appni ochish, kontaktni topish va matn kiritib yuborish",
-                tag = "Telegram GUI Automation",
+                subtitle = "Telegram ochish, kontaktni topish va matn kiritib yuborish",
+                tag = "GUI AUTO",
                 testTag = "action_telegram",
                 onClick = { viewModel.triggerTelegramQuickAction() }
             )
 
+            // 3. Screen Vision
             QuickActionCard(
                 icon = Icons.Filled.Visibility,
-                accentColor = NeonEmerald,
-                title = "Ekran Tahlili (Multimodal Vision)",
-                subtitle = "Ekranda nima borligini tahlil qilish va ovozli javob berish",
-                tag = "On-Demand Screen Vision",
+                accentColor = WarningAmber,
+                title = "Ekran Tahlili (Screen Vision)",
+                subtitle = "Ekranda nima borligini skanerlash va ovozli tushuntirib berish",
+                tag = "VISION AI",
                 testTag = "action_screen_vision",
                 onClick = { viewModel.triggerScreenVision() }
             )
 
+            // 4. DOCX Generator
             QuickActionCard(
                 icon = Icons.Filled.Description,
                 accentColor = ElectricBlue,
                 title = "DOCX Hujjat: Avtomobil rasmi bilan",
-                subtitle = "Avtomatik internet qidiruv, rasm yuklab olish va DOCX yaratish",
-                tag = "File & Media Generator",
+                subtitle = "Internetdan rasm qidirib Word (.docx) fayl generatsiya qilish",
+                tag = "FILE GEN",
                 testTag = "action_docx_car",
                 onClick = { viewModel.triggerDocxCarGeneration() }
             )
         }
 
-        // Manual Text Command Input
+        // Manual Command Line / Prompt
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = 8.dp
@@ -330,7 +352,7 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = manualInputText,
                     onValueChange = { manualInputText = it },
-                    placeholder = { Text("Buyruq yoki savol yozing...", color = TextMuted, fontSize = 13.sp) },
+                    placeholder = { Text("Buyruq yozing (Masalan: Call +99890...)", color = TextMuted, fontSize = 12.sp) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CyberCyan,
@@ -361,7 +383,7 @@ fun HomeScreen(
                         .testTag("home_send_button")
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Send,
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
                         tint = SpaceDarkBg,
                         modifier = Modifier.size(20.dp)
@@ -370,7 +392,7 @@ fun HomeScreen(
             }
         }
 
-        // Telemetry HUD Specs
+        // JARVIS Cyber Diagnostics
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = 12.dp
@@ -380,14 +402,78 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TelemetryStat("MODEL", viewModel.preferencesManager.selectedModel.substringAfterLast("-").uppercase(), CyberCyan)
-                TelemetryStat("LANGUAGE", viewModel.preferencesManager.primaryLanguage.uppercase(), NeonEmerald)
+                TelemetryStat("CORE", "JARVIS-3.5", CyberCyan)
+                TelemetryStat("AUDIO_TTS", "ACTIVE", NeonPurple)
+                TelemetryStat("ACCESSIBILITY", if (isAccessibilityActive) "ONLINE" else "OFFLINE", if (isAccessibilityActive) NeonEmerald else AlertRed)
                 TelemetryStat("TOKENS", "${viewModel.preferencesManager.totalTokensUsed}", ElectricBlue)
-                TelemetryStat("ACCESSIBILITY", if (isAccessibilityActive) "ON" else "OFF", if (isAccessibilityActive) NeonEmerald else AlertRed)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    // Call Dialog
+    if (showCallDialog) {
+        AlertDialog(
+            onDismissRequest = { showCallDialog = false },
+            containerColor = SpaceCardBg,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Filled.Phone, contentDescription = null, tint = NeonEmerald)
+                    Text("Telefon Qilish (Direct Dial)", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Qo'ng'iroq qilmoqchi bo'lgan telefon raqamini kiriting:",
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                    OutlinedTextField(
+                        value = callNumberInput,
+                        onValueChange = { callNumberInput = it },
+                        placeholder = { Text("+998901234567", color = TextMuted) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NeonEmerald,
+                            unfocusedBorderColor = SpaceCardBorder,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SpaceDarkBg,
+                            unfocusedContainerColor = SpaceDarkBg
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("call_number_input")
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (callNumberInput.isNotBlank()) {
+                            val num = callNumberInput.trim()
+                            showCallDialog = false
+                            callNumberInput = ""
+                            viewModel.makePhoneCall(num)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NeonEmerald, contentColor = SpaceDarkBg),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag("confirm_call_button")
+                ) {
+                    Text("Qo'ng'iroq Qilish", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCallDialog = false }) {
+                    Text("Bekor qilish", color = TextMuted)
+                }
+            }
+        )
     }
 }
 
@@ -435,17 +521,12 @@ private fun QuickActionCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = title,
-                        color = TextPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Text(
+                    text = title,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
                 Text(
                     text = subtitle,
@@ -475,7 +556,7 @@ private fun QuickActionCard(
 @Composable
 private fun TelemetryStat(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-        Text(text = value, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(text = label, color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+        Text(text = value, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
     }
 }

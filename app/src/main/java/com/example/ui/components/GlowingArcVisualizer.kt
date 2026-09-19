@@ -7,26 +7,35 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.NeonEmerald
 import com.example.ui.theme.NeonPurple
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
@@ -60,10 +69,10 @@ fun GlowingArcVisualizer(
     )
 
     val pulse by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.15f,
+        initialValue = 0.94f,
+        targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse"
@@ -73,7 +82,7 @@ fun GlowingArcVisualizer(
         initialValue = 0f,
         targetValue = (2 * PI).toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "wavePhase"
@@ -87,29 +96,31 @@ fun GlowingArcVisualizer(
     }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        // 1. Rotating Vector HUD Canvas Background
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val baseRadius = (size.minDimension / 2f) * 0.75f
-            val dynamicRadius = baseRadius * (if (isListening || isSpeaking) (1f + amplitude * 0.4f) else pulse)
+            val baseRadius = (size.minDimension / 2f) * 0.88f
+            val dynamicRadius = baseRadius * (if (isListening || isSpeaking) (1f + amplitude * 0.35f) else pulse)
 
-            // 1. Ambient Glow
+            // Ambient Holographic Glow
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        activeColor.copy(alpha = if (isListening || isSpeaking) 0.35f else 0.15f),
+                        activeColor.copy(alpha = if (isListening || isSpeaking) 0.45f else 0.22f),
+                        activeColor.copy(alpha = 0.08f),
                         Color.Transparent
                     ),
                     center = center,
-                    radius = dynamicRadius * 1.5f
+                    radius = dynamicRadius * 1.4f
                 ),
-                radius = dynamicRadius * 1.5f,
+                radius = dynamicRadius * 1.4f,
                 center = center
             )
 
-            // 2. Outer Segmented Ring 1 (Rotates clockwise)
+            // Outer Segmented Arcs (HUD Ring 1)
             val outerStroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-            val segments = 6
-            val sweepAngle = 38f
+            val segments = 8
+            val sweepAngle = 28f
             for (i in 0 until segments) {
                 val startAngle = rotation1 + i * (360f / segments)
                 drawArc(
@@ -126,16 +137,16 @@ fun GlowingArcVisualizer(
                 )
             }
 
-            // 3. Middle Ring (Rotates counter-clockwise)
+            // Middle Counter-Rotating HUD Arcs
             val midRadius = dynamicRadius * 0.78f
             val midStroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Square)
-            val midSegments = 4
+            val midSegments = 6
             for (i in 0 until midSegments) {
                 val startAngle = rotation2 + i * (360f / midSegments)
                 drawArc(
-                    color = activeColor.copy(alpha = 0.7f),
+                    color = activeColor.copy(alpha = 0.75f),
                     startAngle = startAngle,
-                    sweepAngle = 60f,
+                    sweepAngle = 40f,
                     useCenter = false,
                     style = midStroke,
                     topLeft = Offset(center.x - midRadius, center.y - midRadius),
@@ -143,50 +154,68 @@ fun GlowingArcVisualizer(
                 )
             }
 
-            // 4. Inner Cyber Reactor Core
-            val coreRadius = dynamicRadius * 0.5f
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.White,
-                        activeColor,
-                        activeColor.copy(alpha = 0.2f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = coreRadius
-                ),
-                radius = coreRadius,
-                center = center
+            // Corner Tactical Brackets
+            val bracketSize = dynamicRadius * 0.92f
+            val bStroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Square)
+            val bLen = 16.dp.toPx()
+
+            // Top-Left
+            drawLine(activeColor, Offset(center.x - bracketSize, center.y - bracketSize + bLen), Offset(center.x - bracketSize, center.y - bracketSize), bStroke.width)
+            drawLine(activeColor, Offset(center.x - bracketSize, center.y - bracketSize), Offset(center.x - bracketSize + bLen, center.y - bracketSize), bStroke.width)
+
+            // Top-Right
+            drawLine(activeColor, Offset(center.x + bracketSize - bLen, center.y - bracketSize), Offset(center.x + bracketSize, center.y - bracketSize), bStroke.width)
+            drawLine(activeColor, Offset(center.x + bracketSize, center.y - bracketSize), Offset(center.x + bracketSize, center.y - bracketSize + bLen), bStroke.width)
+
+            // Bottom-Left
+            drawLine(activeColor, Offset(center.x - bracketSize, center.y + bracketSize - bLen), Offset(center.x - bracketSize, center.y + bracketSize), bStroke.width)
+            drawLine(activeColor, Offset(center.x - bracketSize, center.y + bracketSize), Offset(center.x - bracketSize + bLen, center.y + bracketSize), bStroke.width)
+
+            // Bottom-Right
+            drawLine(activeColor, Offset(center.x + bracketSize - bLen, center.y + bracketSize), Offset(center.x + bracketSize, center.y + bracketSize), bStroke.width)
+            drawLine(activeColor, Offset(center.x + bracketSize, center.y + bracketSize), Offset(center.x + bracketSize, center.y + bracketSize - bLen), bStroke.width)
+        }
+
+        // 2. Center JARVIS Holographic Blue Cube Visual
+        Box(
+            modifier = Modifier
+                .size(136.dp)
+                .scale(if (isListening || isSpeaking) (1f + amplitude * 0.15f) else pulse)
+                .clip(RoundedCornerShape(22.dp))
+                .border(2.dp, activeColor, RoundedCornerShape(22.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.jarvis_cube),
+                contentDescription = "JARVIS Cyber Cube",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
 
-            // 5. Audio Waveform Oscilloscope inside the core
+            // Real-time Audio Waveform Overlay on Cube
             if (isListening || isSpeaking || isProcessing) {
-                val wavePath = Path()
-                val waveWidth = coreRadius * 1.4f
-                val startX = center.x - waveWidth / 2f
-                val endX = center.x + waveWidth / 2f
-                val points = 30
-                val amp = if (isListening) (amplitude * 35f + 8f) else 15f
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val wavePath = Path()
+                    val waveWidth = size.width * 0.85f
+                    val startX = (size.width - waveWidth) / 2f
+                    val centerY = size.height / 2f
+                    val points = 24
+                    val amp = if (isListening) (amplitude * 24f + 6f) else 12f
 
-                for (i in 0..points) {
-                    val progress = i.toFloat() / points
-                    val x = startX + progress * waveWidth
-                    val freq = 3.5f
-                    val y = center.y + sin(progress * freq * 2 * PI + wavePhase).toFloat() * amp * (1f - kotlin.math.abs(progress - 0.5f) * 1.6f).coerceAtLeast(0f)
+                    for (i in 0..points) {
+                        val progress = i.toFloat() / points
+                        val x = startX + progress * waveWidth
+                        val y = centerY + sin(progress * 3.2f * 2 * PI + wavePhase).toFloat() * amp * (1f - kotlin.math.abs(progress - 0.5f) * 1.5f).coerceAtLeast(0f)
 
-                    if (i == 0) {
-                        wavePath.moveTo(x, y)
-                    } else {
-                        wavePath.lineTo(x, y)
+                        if (i == 0) wavePath.moveTo(x, y) else wavePath.lineTo(x, y)
                     }
-                }
 
-                drawPath(
-                    path = wavePath,
-                    color = Color.White,
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                )
+                    drawPath(
+                        path = wavePath,
+                        color = Color.White,
+                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
             }
         }
     }

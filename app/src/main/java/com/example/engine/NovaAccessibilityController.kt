@@ -29,6 +29,12 @@ class NovaAccessibilityController(private val context: Context) {
                 launchApp(target)
             }
 
+            "call_phone", "dial_phone", "call" -> {
+                val targetNumber = payload.phoneNumber ?: payload.targetQuery ?: ""
+                onStatus("Qo'ng'iroq amalga oshirilmoqda: $targetNumber")
+                makePhoneCall(targetNumber)
+            }
+
             "send_telegram" -> {
                 val contact = payload.targetQuery ?: "Onam"
                 val text = payload.textToType ?: "Salom"
@@ -158,6 +164,40 @@ class NovaAccessibilityController(private val context: Context) {
             return true
         } catch (e: Exception) {
             return false
+        }
+    }
+
+    fun makePhoneCall(numberOrQuery: String): Boolean {
+        return try {
+            val cleanNumber = numberOrQuery.replace(Regex("[^0-9+]"), "")
+            val dialNumber = if (cleanNumber.isNotEmpty()) cleanNumber else numberOrQuery
+            
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                val intent = Intent(Intent.ACTION_CALL).apply {
+                    data = Uri.parse("tel:$dialNumber")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                true
+            } else {
+                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$dialNumber")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(dialIntent)
+                true
+            }
+        } catch (e: Exception) {
+            try {
+                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$numberOrQuery")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(dialIntent)
+                true
+            } catch (err: Exception) {
+                false
+            }
         }
     }
 

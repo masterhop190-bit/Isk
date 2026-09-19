@@ -78,6 +78,7 @@ data class NovaActionPayload(
     @Json(name = "fileTitle") val fileTitle: String? = null,
     @Json(name = "fileContent") val fileContent: String? = null,
     @Json(name = "searchImageQuery") val searchImageQuery: String? = null,
+    @Json(name = "phoneNumber") val phoneNumber: String? = null,
     @Json(name = "spokenResponse") val spokenResponse: String? = null,
     @Json(name = "displayText") val displayText: String? = null
 )

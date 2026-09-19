@@ -112,13 +112,14 @@ class NovaAssistantRepository(
             
             TOKEN SAVINGS INSTRUCTION: Keep responses concise, direct, and structured.
             
-            When user asks for an Android action or GUI automation (e.g. sending a message on Telegram/WhatsApp, opening an app, tapping an on-screen element):
+            When user asks for an Android action or GUI automation (e.g. sending a message on Telegram/WhatsApp, opening an app, calling someone, tapping an on-screen element):
             Return a JSON object in this exact format:
             {
               "type": "action",
-              "action": "send_telegram|open_app|click|type_text|scroll_down|scroll_up|back|home",
+              "action": "send_telegram|open_app|call_phone|click|type_text|scroll_down|scroll_up|back|home",
               "targetApp": "org.telegram.messenger",
               "targetQuery": "contact name or button text",
+              "phoneNumber": "+998901234567 or contact name",
               "textToType": "message content if applicable",
               "spokenResponse": "Short spoken response in user's language",
               "displayText": "Clear status confirmation"

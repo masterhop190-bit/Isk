@@ -106,7 +106,9 @@ class NovaVoiceEngine(private val context: Context) : TextToSpeech.OnInitListene
 
                     if (isWakeWordMode) {
                         val lower = spokenText.lowercase()
-                        if (lower.contains("ok nova") || lower.contains("nova") || lower.contains("salom nova") || lower.contains("нова")) {
+                        if (lower.contains("hi nova") || lower.contains("hey nova") || lower.contains("ok nova") || 
+                            lower.contains("nova") || lower.contains("salom nova") || lower.contains("нова") || 
+                            lower.contains("привет нова") || lower.contains("jarvis") || lower.contains("hi jarvis")) {
                             onWakeWordDetected?.invoke()
                         }
                     } else {

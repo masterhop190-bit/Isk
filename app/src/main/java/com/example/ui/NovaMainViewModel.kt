@@ -19,6 +19,7 @@ import com.example.data.repository.NovaAssistantRepository
 import com.example.engine.NovaVoiceEngine
 import com.example.service.NovaAccessibilityService
 import com.example.service.NovaOverlayService
+import com.example.service.NovaNotificationManager
 import com.example.service.NovaWakeWordService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,7 +60,7 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
-    private val _currentStatusText = MutableStateFlow("Tizim tayyor • Buyruqni ayting yoki yozing")
+    private val _currentStatusText = MutableStateFlow("JARVIS CORE TAYYOR • \"Hi Nova\" yoki buyruq bering")
     val currentStatusText: StateFlow<String> = _currentStatusText.asStateFlow()
 
     private val _liveModeActive = MutableStateFlow(false)
@@ -80,9 +81,24 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
+        voiceEngine.onListeningStateChanged = { listening ->
+            NovaNotificationManager.showJarvisNotification(app, listening)
+        }
+
+        // Post persistent Jarvis voice notification on app launch
+        NovaNotificationManager.showJarvisNotification(app, false)
+
         // Initialize default shortcuts if empty
         viewModelScope.launch {
             if (repository.allShortcuts.stateIn(this).value.isEmpty()) {
+                repository.saveShortcut(
+                    AutomationShortcut(
+                        title = "Telefon Qilish: +998901234567",
+                        triggerPhrase = "Call +998901234567",
+                        targetAppPackage = "com.android.dialer",
+                        actionScriptJson = """{"type":"action","action":"call_phone","phoneNumber":"+998901234567"}"""
+                    )
+                )
                 repository.saveShortcut(
                     AutomationShortcut(
                         title = "Telegram Xabar: Onamga",
@@ -125,10 +141,12 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
         if (isListening.value) {
             voiceEngine.stopListening()
             _currentStatusText.value = "Kutish rejimida"
+            NovaNotificationManager.showJarvisNotification(app, false)
         } else {
             voiceEngine.stopSpeaking()
-            _currentStatusText.value = "Tinglanmoqda... Buyruqni ayting"
+            _currentStatusText.value = "Tinglanmoqda... Gapiring"
             voiceEngine.startListening(langCode = preferencesManager.primaryLanguage)
+            NovaNotificationManager.showJarvisNotification(app, true)
         }
     }
 
@@ -138,10 +156,12 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
         if (next) {
             _currentStatusText.value = "Live Interaktiv Rejim Faol"
             voiceEngine.startListening(langCode = preferencesManager.primaryLanguage)
+            NovaNotificationManager.showJarvisNotification(app, true)
         } else {
             voiceEngine.stopListening()
             voiceEngine.stopSpeaking()
             _currentStatusText.value = "Live rejim to'xtatildi"
+            NovaNotificationManager.showJarvisNotification(app, false)
         }
     }
 
@@ -153,6 +173,16 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             try {
+                // Direct Phone Call check for ultra-fast execution
+                val lowerPrompt = prompt.lowercase().trim()
+                if (lowerPrompt.startsWith("call ") || lowerPrompt.startsWith("qo'ng'iroq qil ") || 
+                    lowerPrompt.startsWith("telefon qil ") || lowerPrompt.startsWith("позвони ")) {
+                    val phonePart = prompt.substringAfter(" ").trim()
+                    if (phonePart.isNotEmpty()) {
+                        makePhoneCall(phonePart)
+                    }
+                }
+
                 val result = repository.processUserPrompt(
                     prompt = prompt,
                     isVoiceInput = isVoice,
@@ -164,17 +194,15 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
 
                 _currentStatusText.value = "Tayyor"
 
-                // TTS playback if voice enabled or in live mode
-                if (isVoice || _liveModeActive.value) {
-                    voiceEngine.speak(
-                        text = result.spokenResponse,
-                        speed = preferencesManager.ttsSpeed,
-                        pitch = preferencesManager.ttsPitch
-                    ) {
-                        if (_liveModeActive.value) {
-                            // In live continuous mode, automatically listen again
-                            voiceEngine.startListening(langCode = preferencesManager.primaryLanguage)
-                        }
+                // TTS playback: Speak back to talk with the user using AI
+                voiceEngine.speak(
+                    text = result.spokenResponse,
+                    speed = preferencesManager.ttsSpeed,
+                    pitch = preferencesManager.ttsPitch
+                ) {
+                    if (_liveModeActive.value) {
+                        // In live continuous mode, automatically listen again
+                        voiceEngine.startListening(langCode = preferencesManager.primaryLanguage)
                     }
                 }
             } catch (e: Exception) {
@@ -183,6 +211,11 @@ class NovaMainViewModel(application: Application) : AndroidViewModel(application
                 _isProcessing.value = false
             }
         }
+    }
+
+    fun makePhoneCall(numberOrQuery: String) {
+        _currentStatusText.value = "Qo'ng'iroq qilinmoqda: $numberOrQuery"
+        repository.accessibilityController.makePhoneCall(numberOrQuery)
     }
 
     fun triggerScreenVision() {

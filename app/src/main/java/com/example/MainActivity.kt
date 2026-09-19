@@ -62,7 +62,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleVoiceTriggerIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra("TRIGGER_VOICE_IMMEDIATELY", false) == true) {
+        if (intent?.getBooleanExtra("TRIGGER_VOICE_IMMEDIATELY", false) == true ||
+            intent?.getBooleanExtra("TOGGLE_VOICE_IMMEDIATELY", false) == true) {
             viewModel.toggleVoiceListening()
         }
     }
@@ -78,7 +79,10 @@ fun MainAppContent(viewModel: NovaMainViewModel) {
     ) { /* Handled */ }
 
     LaunchedEffect(Unit) {
-        val permissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        val permissions = mutableListOf(
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.CALL_PHONE
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }

@@ -3,6 +3,7 @@ package com.example.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -13,6 +14,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import com.example.MainActivity
 import com.example.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,14 +55,33 @@ class NovaOverlayService : Service() {
             y = 300
         }
 
-        val container = FrameLayout(this).apply {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(Color.TRANSPARENT)
+
+            // 1. Floating Assistant Bubble
             val iconView = ImageView(this@NovaOverlayService).apply {
-                setImageResource(R.drawable.ic_launcher_foreground)
-                setBackgroundColor(0xFF0D1424.toInt())
-                layoutParams = FrameLayout.LayoutParams(160, 160)
-                setPadding(12, 12, 12, 12)
+                setImageResource(R.mipmap.ic_launcher)
+                layoutParams = LinearLayout.LayoutParams(130, 130)
+                setPadding(8, 8, 8, 8)
             }
             addView(iconView)
+
+            // 2. Delete / Dismiss Close Button
+            val closeBtn = ImageView(this@NovaOverlayService).apply {
+                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                setColorFilter(0xFFFF5252.toInt())
+                setBackgroundColor(0xCC101828.toInt())
+                layoutParams = LinearLayout.LayoutParams(50, 50).apply {
+                    setMargins(4, 0, 0, 0)
+                }
+                setPadding(4, 4, 4, 4)
+                setOnClickListener {
+                    // Close and delete floating overlay button
+                    stopSelf()
+                }
+            }
+            addView(closeBtn)
         }
 
         container.setOnTouchListener(object : View.OnTouchListener {
